@@ -4,6 +4,7 @@ import config_manager
 import updater
 from monitors.sql_monitor import SqlMonitor
 from monitors.url_monitor import UrlMonitor
+from monitors.ssl_monitor import SSLMonitor
 import alerter
 from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import ClientAuthenticationError
@@ -68,6 +69,17 @@ def main():
                 timeout=url_config.getint('timeout', 10) # Use getint for integer conversion
             )
             thread = threading.Thread(target=run_monitor_in_thread, args=(url_monitor, alerts_queue))
+            threads.append(thread)
+            thread.start()
+        
+        elif section.startswith('Monitors.SSL.'):
+            monitor_name = section.split('.')[-1]
+            ssl_config = config[section]
+            ssl_monitor = SSLMonitor(
+                host=ssl_config['host'],
+                port=ssl_config.getint('port', 443)
+            )
+            thread = threading.Thread(target=run_monitor_in_thread, args=(ssl_monitor, alerts_queue))
             threads.append(thread)
             thread.start()
 

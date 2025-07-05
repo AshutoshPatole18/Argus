@@ -27,6 +27,10 @@ timeout = 10 # Optional: defaults to 10 seconds
 [Monitors.URL.AnotherSite]
 url = https://www.github.com
 check_string = GitHub
+
+[Monitors.SSL.YourSSLDomain]
+host = example.com # Just the domain, no https://
+port = 443 # Optional: defaults to 443
 """
 
 def get_config_dir():
