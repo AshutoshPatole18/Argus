@@ -3,6 +3,7 @@ import updater
 from monitors.sql_monitor import SqlMonitor
 from monitors.url_monitor import UrlMonitor
 from monitors.ssl_monitor import SSLMonitor
+from monitors.vm_monitor import VmMonitor
 import alerter
 from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import ClientAuthenticationError
@@ -89,6 +90,23 @@ def main():
                 port=ssl_config.getint('port', 443)
             )
             thread = threading.Thread(target=run_monitor_in_thread, args=(ssl_monitor, alerts_queue))
+            threads.append(thread)
+            thread.start()
+
+        elif section.startswith('Monitors.VM.'):
+            if not credential:
+                logging.warning("Skipping VM monitors due to authentication failure.")
+                continue
+            vm_name = section.split('.')[-1]
+            vm_config = config[section]
+            vm_monitor = VmMonitor(
+                credential=credential,
+                subscription_id=config['Azure']['subscription_id'],
+                resource_group=vm_config["resource_group"],
+                vm_name=vm_config["vm_name"],
+                config=vm_config
+            )
+            thread = threading.Thread(target=run_monitor_in_thread, args=(vm_monitor, alerts_queue))
             threads.append(thread)
             thread.start()
 
