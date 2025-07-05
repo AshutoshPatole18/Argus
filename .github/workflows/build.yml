@@ -1,0 +1,47 @@
+
+name: Build ArgusSight Executable
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build the executable
+      run: pyinstaller build.spec
+
+    - name: Prepare artifacts for upload
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          mv dist/ArgusSight.exe dist/ArgusSight-windows.exe
+        else
+          mv dist/ArgusSight dist/ArgusSight-linux
+        fi
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ArgusSight-${{ matrix.os }}
+        path: dist/*
