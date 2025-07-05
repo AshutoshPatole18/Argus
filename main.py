@@ -7,6 +7,17 @@ from monitors.url_monitor import UrlMonitor
 import alerter
 from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import ClientAuthenticationError
+import threading
+import queue
+
+def run_monitor_in_thread(monitor_instance, alerts_queue):
+    """Wrapper function to run a monitor's check method in a thread and put results into a queue."""
+    try:
+        alerts = monitor_instance.check()
+        if alerts:
+            alerts_queue.put(alerts)
+    except Exception as e:
+        alerts_queue.put([f"Error running monitor {monitor_instance.__class__.__name__}: {e}"])
 
 def main():
     """Main function to run all monitoring checks and send alerts."""
@@ -26,9 +37,10 @@ def main():
         # For URL checks, we don't need to exit if Azure auth fails
         credential = None 
 
-    all_alerts = []
+    threads = []
+    alerts_queue = queue.Queue()
 
-    # Dynamically run all monitors defined in config
+    # Dynamically run all monitors defined in config in separate threads
     for section in config.sections():
         if section.startswith('Monitors.SQL.'):
             if not credential:
@@ -42,8 +54,9 @@ def main():
                 resource_group=instance_config["resource_group"],
                 instance_name=instance_name
             )
-            alerts = sql_monitor.check()
-            all_alerts.extend(alerts)
+            thread = threading.Thread(target=run_monitor_in_thread, args=(sql_monitor, alerts_queue))
+            threads.append(thread)
+            thread.start()
         
         elif section.startswith('Monitors.URL.'):
             monitor_name = section.split('.')[-1]
@@ -52,10 +65,20 @@ def main():
                 monitor_name=monitor_name,
                 url=url_config['url'],
                 check_string=url_config.get('check_string'),
-                timeout=url_config.get('timeout', 10)
+                timeout=url_config.getint('timeout', 10) # Use getint for integer conversion
             )
-            alerts = url_monitor.check()
-            all_alerts.extend(alerts)
+            thread = threading.Thread(target=run_monitor_in_thread, args=(url_monitor, alerts_queue))
+            threads.append(thread)
+            thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    # Collect all alerts from the queue
+    all_alerts = []
+    while not alerts_queue.empty():
+        all_alerts.extend(alerts_queue.get())
 
     # Send Alerts
     if all_alerts:
