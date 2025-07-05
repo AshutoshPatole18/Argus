@@ -1,10 +1,8 @@
-name: Build ArgusSight Executable
-
+name: Build & Release ArgusSight
 on:
   push:
-    branches:
-      - main
-
+    tags:
+      - 'v*' # Trigger on tags like v1.0, v1.2.3
 jobs:
   build:
     name: Build on ${{ matrix.os }}
@@ -12,37 +10,55 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Build the executable
-        run: pyinstaller build.spec
-
-      - name: Prepare artifacts for upload
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            mv dist/ArgusSight.exe dist/ArgusSight-windows-${{ github.run_number }}.exe
-          else
-            mv dist/ArgusSight dist/ArgusSight-linux-${{ github.run_number }}
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ArgusSight-${{ matrix.os }}-${{ github.run_number }}
-          path: dist/*
-          overwrite: true
-          include-hidden-files: true
+    - name: Check out code
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Build the executable
+      run: pyinstaller build.spec
+    - name: Prepare Artifact Name
+      id: artifact_name
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          echo "ASSET_NAME=ArgusSight-windows.exe" >> $GITHUB_ENV
+        else
+          echo "ASSET_NAME=ArgusSight-linux" >> $GITHUB_ENV
+        fi
+      shell: bash
+    - name: Rename artifact for release (Linux)
+      run: mv dist/ArgusSight ${{ env.ASSET_NAME }}
+      shell: bash
+      if: runner.os == 'Linux'
+    - name: Rename artifact for release (Windows)
+      run: mv dist/ArgusSight.exe ${{ env.ASSET_NAME }}
+      shell: bash
+      if: runner.os == 'Windows'
+    - name: Upload artifact for release
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ASSET_NAME }}
+        path: ${{ env.ASSET_NAME }}
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create a release
+    steps:
+    - name: Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    - name: Create Release and Upload Assets
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "artifacts/*/*" # Updated path pattern for v4 artifact structure
+        generateReleaseNotes: true # Automatically generate release notes from commits
+        token: ${{ secrets.GITHUB_TOKEN }}
