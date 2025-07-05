@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from azure.monitor.query import MetricsQueryClient
 from azure.core.exceptions import HttpResponseError
@@ -14,7 +15,7 @@ class SqlMonitor:
 
     def check(self):
         """Checks SQL MI metrics and returns a list of alert messages."""
-        print(f"\nChecking SQL Managed Instance: {self.instance_name}")
+        logging.info(f"\nChecking SQL Managed Instance: {self.instance_name}")
         alerts = []
         try:
             metrics_data = self._query_metrics()
@@ -24,7 +25,7 @@ class SqlMonitor:
                     alerts.append(storage_alert)
         except Exception as e:
             error_message = f"Error checking SQL instance {self.instance_name}: {e}"
-            print(error_message)
+            logging.error(error_message)
             alerts.append(error_message)
         return alerts
 
@@ -39,7 +40,7 @@ class SqlMonitor:
             )
             return {metric.name: metric for metric in response.metrics}
         except HttpResponseError as e:
-            print(f"  -> Failed to query metrics for {self.instance_name}: {e}")
+            logging.warning(f"  -> Failed to query metrics for {self.instance_name}: {e}")
             return None
 
     def _check_storage_usage(self, metrics_data):
@@ -52,17 +53,17 @@ class SqlMonitor:
 
             if reserved_mb > 0:
                 usage_percent = (used_mb / reserved_mb) * 100
-                print(f"  -> Storage Usage: {usage_percent:.2f}% ({used_mb:.2f}MB / {reserved_mb:.2f}MB)")
+                logging.debug(f"  -> Storage Usage: {usage_percent:.2f}% ({used_mb:.2f}MB / {reserved_mb:.2f}MB)")
                 if usage_percent >= 90:
                     return f"SQL instance '{self.instance_name}' storage usage is at {usage_percent:.2f}%!"
             return None
         except (IndexError, TypeError) as e:
-            print(f"  -> Could not process storage data for {self.instance_name}: {e}")
+            logging.warning(f"  -> Could not process storage data for {self.instance_name}: {e}")
             return None
 
     def _get_latest_metric_value(self, metrics_data, metric_name):
         metric = metrics_data.get(metric_name)
         if metric and metric.timeseries and metric.timeseries[0].data:
             return metric.timeseries[0].data[-1].average # Get the most recent data point
-        print(f"  -> Metric '{metric_name}' not available for {self.instance_name}.")
+        logging.warning(f"  -> Metric '{metric_name}' not available for {self.instance_name}.")
         return None

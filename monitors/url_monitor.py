@@ -1,4 +1,5 @@
 
+import logging
 import requests
 
 class UrlMonitor:
@@ -11,25 +12,25 @@ class UrlMonitor:
 
     def check(self):
         """Performs the URL check and returns a list of alert messages."""
-        print(f"\nChecking URL: {self.monitor_name} ({self.url})")
+        logging.info(f"\nChecking URL: {self.monitor_name} ({self.url})")
         alerts = []
         try:
             response = requests.get(self.url, timeout=self.timeout)
 
             if response.status_code >= 400:
                 alert = f"URL '{self.monitor_name}' is down! Received status code {response.status_code}."
-                print(f"  -> {alert}")
+                logging.warning(f"  -> {alert}")
                 alerts.append(alert)
             elif self.check_string and self.check_string not in response.text:
                 alert = f"URL '{self.monitor_name}' is up, but the expected string was not found."
-                print(f"  -> {alert}")
+                logging.warning(f"  -> {alert}")
                 alerts.append(alert)
             else:
-                print(f"  -> Status: {response.status_code} OK")
+                logging.debug(f"  -> Status: {response.status_code} OK")
 
         except requests.exceptions.RequestException as e:
             alert = f"Failed to connect to URL '{self.monitor_name}': {e}"
-            print(f"  -> {alert}")
+            logging.error(f"  -> {alert}")
             alerts.append(alert)
         
         return alerts

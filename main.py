@@ -1,5 +1,3 @@
-
-
 import config_manager
 import updater
 from monitors.sql_monitor import SqlMonitor
@@ -10,6 +8,7 @@ from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import ClientAuthenticationError
 import threading
 import queue
+import logging
 
 def run_monitor_in_thread(monitor_instance, alerts_queue):
     """Wrapper function to run a monitor's check method in a thread and put results into a queue."""
@@ -28,13 +27,23 @@ def main():
     if not config:
         return # Exit if config was just created
 
-    print("Starting ArgusSight tool...")
+    # Configure logging based on verbose setting
+    verbose = config_manager.get_verbose_setting(config)
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+    else:
+        logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+    # Suppress azure.identity logs
+    logging.getLogger("azure.identity").setLevel(logging.ERROR)
+
+    logging.info("Starting ArgusSight tool...")
 
     try:
         credential = DefaultAzureCredential()
-        print("Authentication successful.")
+        logging.debug("Authentication successful.")
     except ClientAuthenticationError as e:
-        print(f"Authentication failed: {e}")
+        logging.warning(f"Authentication failed: {e}")
         # For URL checks, we don't need to exit if Azure auth fails
         credential = None 
 
@@ -45,7 +54,7 @@ def main():
     for section in config.sections():
         if section.startswith('Monitors.SQL.'):
             if not credential:
-                print("Skipping SQL monitors due to authentication failure.")
+                logging.warning("Skipping SQL monitors due to authentication failure.")
                 continue
             instance_name = section.split('.')[-1]
             instance_config = config[section]
@@ -96,10 +105,11 @@ def main():
     if all_alerts:
         subject = "ArgusSight Monitoring Alert"
         body = "The following alerts were triggered:\n\n" + "\n".join(all_alerts)
-        print(f"\n--- Preparing Alert ---\nSubject: {subject}\nBody:\n{body}")
+        if verbose:
+            logging.info(f"\n--- Preparing Alert ---\nSubject: {subject}\nBody:\n{body}")
         alerter.send_alert_email(subject, body, config)
     else:
-        print("\nNo alerts triggered. All checks passed.")
+        logging.info("\nNo alerts triggered. All checks passed.")
 
 if __name__ == "__main__":
     main()
