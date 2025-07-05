@@ -17,6 +17,16 @@ to_addresses = recipient1@example.com, recipient2@example.com
 
 [Monitors.SQL.YourInstanceName] # Create a section for each instance
 resource_group = YOUR_RESOURCE_GROUP
+
+[Monitors.URL.GoogleExample]
+url = https://www.google.com
+# Optional: Look for specific text on the page
+check_string = Google
+timeout = 10 # Optional: defaults to 10 seconds
+
+[Monitors.URL.AnotherSite]
+url = https://www.github.com
+check_string = GitHub
 """
 
 def get_config_dir():
