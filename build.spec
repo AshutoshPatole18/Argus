@@ -9,11 +9,12 @@ a = Analysis(
         'azure.identity',
         'azure.monitor.query',
         'azure.core',
-        # Add other hidden imports discovered during testing
+        'requests',
+        'version'
     ],
     hookspath=[],
     runtime_hooks=[],
-    excludes=['config'],  # Exclude the config file from the bundle
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,

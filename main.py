@@ -1,6 +1,7 @@
 
 
 import config_manager
+import updater
 from monitors.sql_monitor import SqlMonitor
 import alerter
 from azure.identity import DefaultAzureCredential
@@ -8,11 +9,13 @@ from azure.core.exceptions import ClientAuthenticationError
 
 def main():
     """Main function to run all monitoring checks and send alerts."""
+    updater.check_for_updates()
+
     config = config_manager.initialize_config()
     if not config:
         return # Exit if config was just created
 
-    print("Starting Azure monitoring tool...")
+    print("Starting ArgusSight tool...")
 
     try:
         credential = DefaultAzureCredential()
@@ -24,13 +27,15 @@ def main():
     all_alerts = []
 
     # Run SQL Monitors
-    if hasattr(config, 'SQL_MANAGED_INSTANCES') and config.SQL_MANAGED_INSTANCES:
-        for instance_config in config.SQL_MANAGED_INSTANCES:
+    for section in config.sections():
+        if section.startswith('Monitors.SQL.'):
+            instance_name = section.split('.')[-1]
+            instance_config = config[section]
             sql_monitor = SqlMonitor(
                 credential=credential,
-                subscription_id=config.AZURE_SUBSCRIPTION_ID,
+                subscription_id=config['Azure']['subscription_id'],
                 resource_group=instance_config["resource_group"],
-                instance_name=instance_config["instance_name"]
+                instance_name=instance_name
             )
             alerts = sql_monitor.check()
             all_alerts.extend(alerts)

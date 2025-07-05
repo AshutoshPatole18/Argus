@@ -1,55 +1,50 @@
 
-import sys
 import os
-import importlib.util
+import configparser
 
-DEFAULT_CONFIG_CONTENT = """# --- General Azure Configuration ---
-AZURE_SUBSCRIPTION_ID = "YOUR_SUBSCRIPTION_ID"
+DEFAULT_CONFIG_CONTENT = """[Azure]
+subscription_id = YOUR_SUBSCRIPTION_ID
 
-# --- Monitored Resources ---
-SQL_MANAGED_INSTANCES = [
-    {
-        "resource_group": "YOUR_RESOURCE_GROUP",
-        "instance_name": "YOUR_SQL_MANAGED_INSTANCE_NAME"
-    },
-]
+[Email]
+enabled = false
+server = smtp.example.com
+port = 587
+use_tls = true
+user = your_email@example.com
+password = your_email_password
+from_address = your_email@example.com
+to_addresses = recipient1@example.com, recipient2@example.com
 
-# --- Email Alerting Configuration ---
-SMTP_ENABLED = False
-SMTP_SERVER = "smtp.example.com"
-SMTP_PORT = 587
-SMTP_USE_TLS = True
-SMTP_USER = "your_email@example.com"
-SMTP_PASSWORD = "your_email_password"
-SMTP_FROM = "your_email@example.com"
-SMTP_TO = ["recipient1@example.com"]
+[Monitors.SQL.YourInstanceName] # Create a section for each instance
+resource_group = YOUR_RESOURCE_GROUP
 """
 
+def get_config_dir():
+    """Returns the OS-appropriate config directory path."""
+    if os.name == 'nt': # Windows
+        return os.path.join(os.environ['APPDATA'], 'ArgusSight')
+    else: # Linux, macOS
+        return os.path.join(os.path.expanduser('~'), '.config', 'ArgusSight')
+
 def get_config_path():
-    """Get the absolute path to the config.py file next to the executable or script."""
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        return os.path.join(os.path.dirname(sys.executable), "config.py")
-    else:
-        return os.path.join(os.path.dirname(__file__), "config.py")
-
-def _load_config_from_path(config_path):
-    """Loads the config module from the specified path."""
-    spec = importlib.util.spec_from_file_location("config", config_path)
-    config = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(config)
-    return config
-
-def _create_default_config(config_path):
-    """Creates a default config.py file."""
-    print(f"Config file not found. Creating a default one at: {config_path}")
-    with open(config_path, "w") as f:
-        f.write(DEFAULT_CONFIG_CONTENT)
-    print("Default config.py created. Please edit it with your details and rerun the application.")
+    """Returns the full path to the config.ini file."""
+    return os.path.join(get_config_dir(), 'config.ini')
 
 def initialize_config():
-    """Checks for, creates, and loads the configuration file."""
+    """Ensures the config directory and file exist, and returns the parsed config."""
+    config_dir = get_config_dir()
     config_path = get_config_path()
+
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+
     if not os.path.exists(config_path):
-        _create_default_config(config_path)
-        return None  # Return None to signal that the app should exit
-    return _load_config_from_path(config_path)
+        print(f"Config file not found. Creating a default one at: {config_path}")
+        with open(config_path, "w") as f:
+            f.write(DEFAULT_CONFIG_CONTENT)
+        print("Default config.ini created. Please edit it with your details and rerun the application.")
+        return None
+
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    return config
