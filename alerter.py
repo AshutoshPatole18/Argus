@@ -1,13 +1,13 @@
+import logging
 import smtplib
 from email.mime.text import MIMEText
 
 def send_alert_email(subject, body, config):
     """Sends an email alert using SMTP settings from the config."""
     if not config.getboolean('Email', 'enabled'):
-        print("\nEmail alerting is disabled in config.ini. Skipping.")
+        logging.info("Email alerting is disabled in config.ini. Skipping.")
         return
-
-    print("\nSending email alert...")
+    logging.info("Sending email alert...")
     try:
         smtp_server = config.get('Email', 'server')
         smtp_port = config.getint('Email', 'port')
@@ -27,6 +27,6 @@ def send_alert_email(subject, body, config):
             if smtp_user:
                 server.login(smtp_user, smtp_password)
             server.sendmail(smtp_from, smtp_to, msg.as_string())
-        print("Email sent successfully.")
+        logging.info("Email sent successfully.")
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        logging.error(f"Failed to send email: {e}")

@@ -1,3 +1,4 @@
+import logging
 import ssl
 import socket
 from datetime import datetime
@@ -8,6 +9,7 @@ class SSLMonitor:
         self.port = port
 
     def check(self):
+        logging.info(f"\nChecking SSL for: {self.host}:{self.port}")
         context = ssl.create_default_context()
         try:
             with socket.create_connection((self.host, self.port)) as sock:
@@ -20,9 +22,11 @@ class SSLMonitor:
                     # Calculate days remaining
                     days_remaining = (not_after - datetime.now()).days
                     
+                    logging.debug(f"  -> Certificate for {self.host} expires in {days_remaining} days.")
                     alerts = []
                     if days_remaining < 15:
                         alerts.append(f"SSL certificate for {self.host} expires in {days_remaining} days!")
                     return alerts
         except Exception as e:
+            logging.error(f"  -> Error checking SSL for {self.host}: {e}")
             return [f"Error checking SSL for {self.host}: {e}"]

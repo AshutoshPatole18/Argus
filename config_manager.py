@@ -2,7 +2,10 @@
 import os
 import configparser
 
-DEFAULT_CONFIG_CONTENT = """[Azure]
+DEFAULT_CONFIG_CONTENT = """[General]
+verbose = false
+
+[Azure]
 subscription_id = YOUR_SUBSCRIPTION_ID
 
 [Email]
@@ -62,3 +65,9 @@ def initialize_config():
     config = configparser.ConfigParser()
     config.read(config_path)
     return config
+
+def get_verbose_setting(config):
+    """Returns the verbose setting from the config."""
+    if config.has_option('General', 'verbose'):
+        return config.getboolean('General', 'verbose')
+    return False # Default to non-verbose if not specified

@@ -1,10 +1,9 @@
-
-
 import requests
 from version import __version__
+from packaging.version import parse as parse_version
 
 # The GitHub repository for the tool
-GITHUB_REPO = "your_github_username/your_repo_name" # <-- IMPORTANT: Change this!
+GITHUB_REPO = "AshutoshPatole18/Argus"
 
 def check_for_updates():
     """Checks for a new version of the tool on GitHub."""
@@ -12,8 +11,8 @@ def check_for_updates():
         api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
         response = requests.get(api_url, timeout=5)
         response.raise_for_status()
-        latest_version = response.json()["tag_name"].lstrip('v')
-        current_version = __version__
+        latest_version = parse_version(response.json()["tag_name"].lstrip('v'))
+        current_version = parse_version(__version__)
 
         if latest_version > current_version:
             print("\n" + "="*50)
