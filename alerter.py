@@ -1,8 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
-import config
 
-def send_alert_email(subject, body):
+def send_alert_email(subject, body, config):
     """Sends an email alert using SMTP."""
     if not config.SMTP_ENABLED:
         print("\nEmail alerting is disabled. Skipping.")
