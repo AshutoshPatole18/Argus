@@ -1,5 +1,3 @@
-
-
 import logging
 from datetime import timedelta
 from azure.monitor.query import MetricsQueryClient
@@ -101,7 +99,7 @@ class VmMonitor:
 
     def _check_memory_usage(self, metrics_data):
         """Checks available memory against a threshold."""
-        threshold_mb = self.config.getfloat('memory_threshold_mb', 1024.0)
+        threshold_mb = self.config.getfloat('memory_threshold_mb', 2048.0)
         available_bytes = self._get_latest_metric_value(metrics_data, "Available Memory Bytes")
         if available_bytes is not None:
             available_mb = available_bytes / (1024 * 1024)

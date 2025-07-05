@@ -25,6 +25,11 @@ resource_group = YOUR_RESOURCE_GROUP
 url = https://www.google.com
 # Optional: Look for specific text on the page
 check_string = Google
+# Optional: Check specific fields in a JSON response. Provide as a JSON string.
+# json_check = {"status": "success", "code": 200}
+# Optional: Basic authentication
+# username = your_username
+# password = your_password
 timeout = 10 # Optional: defaults to 10 seconds
 
 [Monitors.URL.AnotherSite]

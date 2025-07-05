@@ -5,6 +5,7 @@ from monitors.url_monitor import UrlMonitor
 from monitors.ssl_monitor import SSLMonitor
 from monitors.vm_monitor import VmMonitor
 import alerter
+import json
 from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import ClientAuthenticationError
 import threading
@@ -76,6 +77,9 @@ def main():
                 monitor_name=monitor_name,
                 url=url_config['url'],
                 check_string=url_config.get('check_string'),
+                json_check=json.loads(url_config['json_check']) if url_config.get('json_check') else None,
+                username=url_config.get('username'),
+                password=url_config.get('password'),
                 timeout=url_config.getint('timeout', 10) # Use getint for integer conversion
             )
             thread = threading.Thread(target=run_monitor_in_thread, args=(url_monitor, alerts_queue))
