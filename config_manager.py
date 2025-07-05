@@ -34,6 +34,14 @@ check_string = GitHub
 [Monitors.SSL.YourSSLDomain]
 host = example.com # Just the domain, no https://
 port = 443 # Optional: defaults to 443
+
+[Monitors.VM.YourLinuxVM]
+resource_group = YOUR_RESOURCE_GROUP
+vm_name = YourLinuxVMName
+# Optional thresholds
+cpu_threshold = 90.0 # percent
+memory_threshold_mb = 1024 # MB
+disk_threshold_mb = 5120 # MB
 """
 
 def get_config_dir():

@@ -8,6 +8,7 @@ a = Analysis(
     hiddenimports=[
         'azure.identity',
         'azure.monitor.query',
+        'azure.mgmt.compute',
         'azure.core',
         'requests',
         'version'
